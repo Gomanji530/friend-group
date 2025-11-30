@@ -1,68 +1,68 @@
-def average_age(group):
-    """Compute the average age of the group's members."""
-    all_ages = [person["age"] for person in group.values()]
-    return sum(all_ages) / len(group)
-
-
-def forget(group, person1, person2):
-    """Remove the connection between two people."""
-    group[person1]["relations"].pop(person2, None)
-    group[person2]["relations"].pop(person1, None)
-
-
-def add_person(group, name, age, job, relations):
-    """Add a new person with the given characteristics to the group."""
-    new_person = {
-        "age": age,
-        "job": job,
-        "relations": relations
-    }
-    group[name] = new_person
-
-
-def create_initial_group():
-    """Create and return the initial group dictionary."""
-    group = {
-        "Jill": {
-            "age": 26,
-            "job": "biologist",
-            "relations": {
-                "Zalika": "friend",
-                "John": "partner"
-            }
-        },
-        "Zalika": {
-            "age": 28,
-            "job": "artist",
-            "relations": {
-                "Jill": "friend",
-            }
-        },
-        "John": {
-            "age": 27,
-            "job": "writer",
-            "relations": {
-                "Jill": "partner"
-            }
-        }
-    }
-    return group
-
-
-if __name__ == "__main__":
-    group = create_initial_group()
-
-
-    nash_relations = {
-        "John": "cousin",
-        "Zalika": "landlord"
-    }
-    add_person(group, "Nash", 34, "chef", nash_relations)
+class Person:
+    def __init__(self, name, age, job):
+        self.name = name
+        self.age = age
+        self.job = job
     
-  
-    forget(group, "Nash", "John")
- 
-    assert len(group) == 4, "Group should have 4 members"
-    assert average_age(group) == 28.75, "Average age of the group is incorrect!"
-    assert len(group["Nash"]["relations"]) == 1, "Nash should only have one relation"
-    print("All assertions have passed!")
+    def __repr__(self):
+        return f"Person({self.name}, {self.age}, {self.job})"
+    
+    def __hash__(self):
+        return hash(self.name)
+    
+    def __eq__(self, other):
+        return isinstance(other, Person) and self.name == other.name
+
+class Group:
+    def __init__(self):
+        self.people = set()
+        self.connections = {}  
+    
+    def add_person(self, name, age, job):
+        person = Person(name, age, job)
+        if person in self.people:
+            raise ValueError(f"Person {name} already exists in group")
+        self.people.add(person)
+        return person
+    
+    def get_person(self, name):
+        for person in self.people:
+            if person.name == name:
+                return person
+        return None
+    
+    def add_connection(self, name1, name2, relation):
+        person1 = self.get_person(name1)
+        person2 = self.get_person(name2)
+        
+        if not person1 or not person2:
+            raise ValueError("One or both persons not found in group")
+
+        key = tuple(sorted([person1, person2], key=lambda x: x.name))
+        self.connections[key] = relation
+    
+    def forget(self, name1, name2):
+        person1 = self.get_person(name1)
+        person2 = self.get_person(name2)
+        
+        if person1 and person2:
+            key = tuple(sorted([person1, person2], key=lambda x: x.name))
+            self.connections.pop(key, None)
+    
+    def average_age(self):
+        if not self.people:
+            return 0
+        return sum(person.age for person in self.people) / len(self.people)
+    
+    def get_connections(self, name):
+        person = self.get_person(name)
+        if not person:
+            return {}
+        
+        connections = {}
+        for (p1, p2), relation in self.connections.items():
+            if p1 == person:
+                connections[p2.name] = relation
+            elif p2 == person:
+                connections[p1.name] = relation
+        return connections
